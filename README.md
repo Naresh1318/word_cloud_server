@@ -8,7 +8,7 @@ curl -d '{"key1":"value1"}' -H "Content-Type: application/json" -X POST http://n
 ```
 3. See it pop up:
 
-![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
+![alt text](https://raw.githubusercontent.com/Naresh1318/word_cloud_server/master/README/browser.jpg "Logo Title Text 1")
 
 4. Refresh page to reset.
 
