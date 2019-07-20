@@ -1,4 +1,7 @@
-from flask import Flask, render_template, jsonify, request, send_file, json
+import os
+import time
+import pickle
+from flask import Flask, render_template, jsonify, request, json
 
 
 class CustomFlask(Flask):
@@ -11,8 +14,30 @@ class CustomFlask(Flask):
 
 app = CustomFlask(__name__)  # This replaces your existing "app = Flask(__name__)"
 
-data_received = []
 received = False
+database_path = "./database.pkl"
+
+if not os.path.exists(database_path):
+    with open(database_path, "wb") as file:
+        pickle.dump([], file)
+
+
+def add_data(data):
+    with open(database_path, "rb") as file:
+        data_received = pickle.load(file)
+
+    with open(database_path, "wb") as file:
+        data_received.append(data)
+        pickle.dump(data_received, file)
+
+
+def return_latest():
+    with open(database_path, "rb") as file:
+        data_received = pickle.load(file)
+    if len(data_received) > 0:
+        return data_received[-1]
+    else:
+        return None
 
 
 @app.route('/')
@@ -24,10 +49,10 @@ def index():
 def word():
     assert request.method == "POST", "POST request expected received {}".format(request.method)
     if request.method == 'POST':
-        print(request.json)
-        data_received.append(request.json)
-        global received
-        received = True
+        data_received = request.json
+        data_received["timestamp"] = time.time()
+        print(data_received)
+        add_data(data_received)
         return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
     return json.dumps({'success': False}), 404, {'ContentType': 'application/json'}
 
@@ -35,13 +60,17 @@ def word():
 @app.route('/refresh', methods=['POST', 'GET'])
 def refresh():
     if request.method == 'POST':
-        global received
-        if received:
-            data_to_return = jsonify(data_received[-1])
-            received = False
-            return data_to_return
-        else:
+        data_to_return = return_latest()
+        if not data_to_return:
             return jsonify({"0": "__EMPTY"})
+        return jsonify(data_to_return)
+
+
+@app.route('/reset', methods=["GET"])
+def reset():
+    with open(database_path, "wb") as file:
+        pickle.dump([], file)
+    return jsonify({"reset": True})
 
 
 if __name__ == '__main__':
